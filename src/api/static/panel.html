@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotel Costa Azul – Panel de reservaciones</title>
+<style>
+  :root{--verde:#1d5632;--claro:#eef4ef;--rojo:#b3261e;--gris:#555;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#222;background:#fafafa}
+  header{background:var(--verde);color:#fff;padding:18px 24px}
+  header h1{margin:0;font-size:26px} header p{margin:4px 0 0;opacity:.9;font-size:16px}
+  nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px 24px;background:var(--claro)}
+  nav button{font-size:18px;padding:12px 18px;border:2px solid var(--verde);background:#fff;color:var(--verde);border-radius:10px;cursor:pointer;font-weight:bold}
+  nav button.activo{background:var(--verde);color:#fff}
+  main{padding:20px 24px;max-width:1000px;margin:auto}
+  h2{color:var(--verde);margin-top:0}
+  .tarjetas{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .tarjeta{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px}
+  .tarjeta b{display:block;font-size:19px}
+  .precio{color:var(--verde);font-size:22px;font-weight:bold}
+  .ok{color:var(--verde);font-weight:bold}.mal{color:var(--rojo);font-weight:bold}
+  label{display:block;margin:12px 0 4px;font-weight:bold}
+  input,select{font-size:18px;padding:10px;border:2px solid #bbb;border-radius:8px;width:100%;max-width:420px}
+  input[type=checkbox]{width:auto;transform:scale(1.4);margin-right:10px}
+  .check{display:flex;align-items:center;margin:14px 0;font-weight:normal}
+  button.grande{font-size:19px;padding:14px 22px;border:0;border-radius:10px;background:var(--verde);color:#fff;cursor:pointer;margin:8px 8px 0 0;font-weight:bold}
+  button.sec{background:#fff;color:var(--verde);border:2px solid var(--verde)}
+  button.peligro{background:var(--rojo)}
+  .aviso{padding:14px 18px;border-radius:10px;margin-bottom:16px;font-weight:bold;display:none}
+  .aviso.bien{display:block;background:#e3f3e7;color:#14532d;border:2px solid #86c79a}
+  .aviso.error{display:block;background:#fdeceb;color:#8a1c14;border:2px solid #f0a5a0}
+  table{border-collapse:collapse;width:100%;background:#fff}
+  th,td{border:1px solid #ddd;padding:10px;text-align:left} th{background:var(--claro)}
+  .fila{margin:10px 0}.pista{color:var(--gris);font-size:15px}
+  .estado{display:inline-block;padding:4px 12px;border-radius:20px;background:var(--claro);color:var(--verde);font-weight:bold}
+  .e-DISPONIBLE{background:#e3f3e7}.e-OCUPADA{background:#fdeceb;color:#8a1c14}.e-PENDIENTE_DE_LIMPIEZA{background:#fff4d6;color:#7a5a00}.e-FUERA_DE_SERVICIO{background:#e5e5e5;color:#444}
+  details{margin-top:18px}
+  .paso{border-left:6px solid var(--verde);padding:6px 16px;margin:16px 0;background:#fff;border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏨 Hotel Costa Azul</h1>
+  <p>Panel de reservaciones · Todo se hace con botones, sin escribir código</p>
+</header>
+<nav id="menu">
+  <button data-v="habitaciones" class="activo">1. ¿Qué hay disponible?</button>
+  <button data-v="nueva">2. Nueva reservación</button>
+  <button data-v="reservaciones">3. Reservaciones</button>
+  <button data-v="limpieza">4. Habitaciones y limpieza</button>
+  <button data-v="resumen">5. Resumen del hotel</button>
+</nav>
+<main>
+  <div id="aviso" class="aviso" role="status"></div>
+
+  <section id="v-habitaciones">
+    <h2>Tipos de habitación y cuántas quedan</h2>
+    <p class="pista">Aquí se ve qué se puede reservar. Si un tipo dice «0 disponibles», ya no se puede confirmar otra reservación.</p>
+    <div id="categorias" class="tarjetas"></div>
+  </section>
+
+  <section id="v-nueva" hidden>
+    <h2>Nueva reservación</h2>
+    <div class="paso"><b>Paso 1.</b> Elige al huésped y la habitación que desea. Después toca «Crear reservación».</div>
+    <label for="huesped">Huésped</label>
+    <select id="huesped"></select>
+    <label for="categoria">Tipo de habitación</label>
+    <select id="categoria"></select>
+    <label for="cantidad">¿Cuántas habitaciones?</label>
+    <input id="cantidad" type="number" min="1" value="1">
+    <button class="grande" id="crear">Crear reservación</button>
+  </section>
+
+  <section id="v-reservaciones" hidden>
+    <h2>Reservaciones</h2>
+    <p class="pista">Toca «Atender» para ver qué sigue con cada reservación.</p>
+    <div id="lista"></div>
+    <div id="detalle"></div>
+  </section>
+
+  <section id="v-limpieza" hidden>
+    <h2>Habitaciones y limpieza</h2>
+    <p class="pista">Cuando una habitación queda «Pendiente de limpieza», Limpieza la libera con un botón y Recepción la ve disponible de inmediato.</p>
+    <label for="filtro">Mostrar</label>
+    <select id="filtro">
+      <option value="">Todas</option>
+      <option value="PENDIENTE_DE_LIMPIEZA">Pendientes de limpieza</option>
+      <option value="DISPONIBLE">Disponibles</option>
+      <option value="OCUPADA">Ocupadas</option>
+      <option value="FUERA_DE_SERVICIO">Fuera de servicio</option>
+    </select>
+    <div id="habs" style="margin-top:14px"></div>
+  </section>
+
+  <section id="v-resumen" hidden>
+    <h2>Resumen del hotel</h2>
+    <div id="resumen"></div>
+  </section>
+
+  <details>
+    <summary>Para el equipo técnico</summary>
+    <p>La documentación técnica de la API (Swagger) está en <a href="/docs">/docs</a>. Estado del servicio: <a href="/health">/health</a>.</p>
+  </details>
+</main>
+
+<script>
+const HUESPEDES = [{"id": "HOT-C001", "nombre": "Huésped 01"}, {"id": "HOT-C002", "nombre": "Huésped 02"}, {"id": "HOT-C003", "nombre": "Huésped 03"}, {"id": "HOT-C004", "nombre": "Huésped 04"}, {"id": "HOT-C005", "nombre": "Huésped 05 ⭐"}, {"id": "HOT-C006", "nombre": "Huésped 06"}, {"id": "HOT-C007", "nombre": "Huésped 07 (inactivo)"}, {"id": "HOT-C008", "nombre": "Huésped 08"}, {"id": "HOT-C009", "nombre": "Huésped 09"}, {"id": "HOT-C010", "nombre": "Huésped 10 ⭐"}, {"id": "HOT-C011", "nombre": "Huésped 11"}, {"id": "HOT-C012", "nombre": "Huésped 12"}, {"id": "HOT-C013", "nombre": "Huésped 13"}, {"id": "HOT-C014", "nombre": "Huésped 14 (inactivo)"}, {"id": "HOT-C015", "nombre": "Huésped 15 ⭐"}, {"id": "HOT-C016", "nombre": "Huésped 16"}, {"id": "HOT-C017", "nombre": "Huésped 17"}, {"id": "HOT-C018", "nombre": "Huésped 18"}, {"id": "HOT-C019", "nombre": "Huésped 19"}, {"id": "HOT-C020", "nombre": "Huésped 20 ⭐"}, {"id": "HOT-C021", "nombre": "Huésped 21 (inactivo)"}, {"id": "HOT-C022", "nombre": "Huésped 22"}, {"id": "HOT-C023", "nombre": "Huésped 23"}, {"id": "HOT-C024", "nombre": "Huésped 24"}, {"id": "HOT-C025", "nombre": "Huésped 25 ⭐"}, {"id": "HOT-C026", "nombre": "Huésped 26"}, {"id": "HOT-C027", "nombre": "Huésped 27"}, {"id": "HOT-C028", "nombre": "Huésped 28 (inactivo)"}, {"id": "HOT-C029", "nombre": "Huésped 29"}, {"id": "HOT-C030", "nombre": "Huésped 30 ⭐"}, {"id": "HOT-C031", "nombre": "Huésped 31"}, {"id": "HOT-C032", "nombre": "Huésped 32"}, {"id": "HOT-C033", "nombre": "Huésped 33"}, {"id": "HOT-C034", "nombre": "Huésped 34"}, {"id": "HOT-C035", "nombre": "Huésped 35 ⭐ (inactivo)"}, {"id": "HOT-C036", "nombre": "Huésped 36"}, {"id": "HOT-C037", "nombre": "Huésped 37"}, {"id": "HOT-C038", "nombre": "Huésped 38"}, {"id": "HOT-C039", "nombre": "Huésped 39"}, {"id": "HOT-C040", "nombre": "Huésped 40 ⭐"}];
+const ESTADOS = {SOLICITADA:"Solicitada",CONFIRMADA:"Confirmada",CHECK_IN:"Hospedado",CHECK_OUT:"Ya se fue",CANCELADA:"Cancelada",NO_SHOW:"No se presentó"};
+const HAB = {DISPONIBLE:"Disponible",OCUPADA:"Ocupada",PENDIENTE_DE_LIMPIEZA:"Pendiente de limpieza",FUERA_DE_SERVICIO:"Fuera de servicio"};
+const $ = id => document.getElementById(id);
+const mxn = v => "$" + Number(v).toLocaleString("es-MX",{minimumFractionDigits:2});
+let categorias = [];
+
+function aviso(texto, tipo){ const a=$("aviso"); a.textContent=texto; a.className="aviso "+(tipo||"bien"); window.scrollTo({top:0,behavior:"smooth"}); }
+
+async function api(metodo, ruta, cuerpo, rol){
+  const r = await fetch(ruta, {method:metodo, headers:{"Content-Type":"application/json","X-Rol":rol||"ADMINISTRACION"}, body: cuerpo?JSON.stringify(cuerpo):undefined});
+  let datos = null; try { datos = await r.json(); } catch(e){}
+  if(!r.ok) throw {estado:r.status, datos};
+  return datos;
+}
+function explicar(e){
+  const d = e.datos||{}; const t = d.error||""; const det = d.detalle||"";
+  if(t==="CreditoExcedidoError") return "Este huésped ya tiene $3,000 en consumos. Para agregar más, debe pagar una parte o Administración debe autorizarlo.";
+  if(e.estado===422 && Array.isArray(d.detail)) return "Faltan datos o hay un dato incorrecto. Revisa los campos.";
+  if(e.estado===404) return "No se encontró lo que buscas: " + det;
+  if(e.estado===409) return "No se puede hacer en este momento: " + det;
+  if(e.estado===422) return "Todavía no se cumplen las condiciones: " + det;
+  if(e.estado===503) return "El servicio de validación de la tarjeta no respondió. Intenta de nuevo.";
+  return det || "Ocurrió un problema. Intenta de nuevo.";
+}
+async function intentar(fn){ try { return await fn(); } catch(e){ aviso(explicar(e),"error"); return null; } }
+
+// ---- navegación
+document.querySelectorAll("#menu button").forEach(b=>b.onclick=()=>ir(b.dataset.v));
+function ir(v){
+  document.querySelectorAll("main > section").forEach(s=>s.hidden = s.id!=="v-"+v);
+  document.querySelectorAll("#menu button").forEach(b=>b.classList.toggle("activo", b.dataset.v===v));
+  $("aviso").className="aviso";
+  ({habitaciones:cargarCategorias,nueva:prepararNueva,reservaciones:cargarLista,limpieza:cargarHabs,resumen:cargarResumen})[v]();
+}
+
+// ---- 1. categorías
+async function cargarCategorias(){
+  const d = await intentar(()=>api("GET","/categorias",null,"RESERVACIONES")); if(!d) return;
+  categorias = d;
+  $("categorias").innerHTML = d.map(c=>`<div class="tarjeta"><b>${c.descripcion}</b><span class="precio">${mxn(c.tarifa)}</span> por noche<br>
+    ${c.habilitada ? `<span class="${c.cupo_disponible>0?'ok':'mal'}">${c.cupo_disponible} disponibles</span>` : '<span class="mal">No disponible</span>'}</div>`).join("");
+}
+
+// ---- 2. nueva reservación
+async function prepararNueva(){
+  if(!categorias.length){ const d = await intentar(()=>api("GET","/categorias",null,"RESERVACIONES")); if(!d) return; categorias=d; }
+  $("huesped").innerHTML = HUESPEDES.map(h=>`<option value="${h.id}">${h.nombre}</option>`).join("");
+  $("categoria").innerHTML = categorias.filter(c=>c.habilitada).map(c=>`<option value="${c.id}">${c.descripcion} · ${mxn(c.tarifa)} por noche · ${c.cupo_disponible} disponibles</option>`).join("");
+}
+$("crear").onclick = async ()=>{
+  const r = await intentar(()=>api("POST","/reservaciones",{huesped_id:$("huesped").value,lineas:[{categoria_id:$("categoria").value,cantidad:Number($("cantidad").value)}]},"RESERVACIONES"));
+  if(r){ aviso("¡Listo! Reservación "+r.id+" creada. Total: "+mxn(r.total)+". Ahora hay que atenderla.","bien"); ir("reservaciones"); atender(r.id); }
+};
+
+// ---- 3. reservaciones
+async function cargarLista(){
+  const d = await intentar(()=>api("GET","/reservaciones",null,"RECEPCION")); if(!d) return;
+  const filas = d.slice(0,60).map(r=>`<tr><td>${r.id}</td><td>${r.huesped_id}</td><td><span class="estado">${ESTADOS[r.estado]}</span></td><td>${mxn(r.total)}</td><td><button class="grande sec" onclick="atender('${r.id}')">Atender</button></td></tr>`).join("");
+  $("lista").innerHTML = `<table><tr><th>Reservación</th><th>Huésped</th><th>Situación</th><th>Total</th><th></th></tr>${filas||'<tr><td colspan=5>Aún no hay reservaciones.</td></tr>'}</table>${d.length>60?'<p class="pista">Se muestran las primeras 60.</p>':''}`;
+}
+async function atender(id){
+  const r = await intentar(()=>api("GET","/reservaciones/"+id,null,"RECEPCION")); if(!r) return;
+  let h = `<div class="tarjeta" style="margin-top:20px"><h2>Reservación ${r.id}</h2>
+    <p>Huésped: <b>${r.huesped_id}</b> · Situación: <span class="estado">${ESTADOS[r.estado]}</span> · Total: <b>${mxn(r.total)}</b>${r.habitacion_id?` · Habitación: <b>${r.habitacion_id}</b>`:""}</p>
+    <p>${r.lineas.map(l=>`${l.cantidad} × ${categoriaNombre(l.categoria_id)} (${mxn(l.tarifa)} por noche)`).join("<br>")}</p>`;
+  if(r.requiere_revision) h += `<p class="mal">⚠ Esta reservación necesita revisión (huésped inactivo o sin autorización).</p>`;
+  if(r.estado==="SOLICITADA"){
+    h += `<div class="paso"><b>Qué sigue:</b> confirmar la reservación para apartar la habitación.</div>`;
+    if(!r.autorizada) h += `<button class="grande" onclick="accion('${r.id}','autorizar','RESERVACIONES','Reservación autorizada.')">Autorizar</button>`;
+    h += `<button class="grande" onclick="accion('${r.id}','confirmar','RESERVACIONES','Reservación confirmada. La habitación quedó apartada.')">Confirmar reservación</button>${formCancelar(r)}`;
+  } else if(r.estado==="CONFIRMADA"){
+    h += `<div class="paso"><b>Qué sigue:</b> cuando llegue el huésped, hacer el check-in.</div>${await formCheckIn(r)}${formCancelar(r)}
+      <button class="grande sec" onclick="accion('${r.id}','no-show','RECEPCION','Se registró que el huésped no se presentó.')">El huésped no llegó</button>`;
+  } else if(r.estado==="CHECK_IN"){
+    h += `<div class="paso"><b>Qué sigue:</b> anotar los consumos del huésped y, al final, hacer el check-out.</div>${await formEstancia(r)}`;
+  } else if(r.estado==="CHECK_OUT"){
+    h += `<div class="paso ok">Esta estancia ya terminó. La habitación ${r.habitacion_id||""} quedó pendiente de limpieza.</div>`;
+  } else { h += `<div class="paso">Esta reservación está cerrada (${ESTADOS[r.estado]}).${Number(r.penalidad_cancelacion)>0?" Penalidad cobrada: "+mxn(r.penalidad_cancelacion)+".":""}</div>`; }
+  $("detalle").innerHTML = h + "</div>";
+  $("detalle").scrollIntoView({behavior:"smooth"});
+}
+function categoriaNombre(id){ const c=categorias.find(x=>x.id===id); return c?c.descripcion:id; }
+async function accion(id, ruta, rol, mensaje, cuerpo){
+  const r = await intentar(()=>api("POST","/reservaciones/"+id+"/"+ruta,cuerpo||null,rol)); if(!r) return;
+  aviso(mensaje,"bien"); atender(id); cargarLista();
+}
+function formCancelar(r){
+  return `<details><summary class="pista">Cancelar esta reservación</summary>
+    <label for="llegada">Fecha y hora de llegada del huésped (para calcular el cobro)</label><input id="llegada" type="datetime-local">
+    <label class="check"><input id="jefe" type="checkbox"> El Jefe de Reservaciones autoriza no cobrar</label>
+    <p class="pista">Regla del hotel: si faltan 48 horas o más, cancelar es gratis. Si faltan menos, se cobra una noche.</p>
+    <button class="grande peligro" onclick="cancelar('${r.id}')">Cancelar reservación</button></details>`;
+}
+async function cancelar(id){
+  const ll = $("llegada").value;
+  const r = await intentar(()=>api("POST","/reservaciones/"+id+"/cancelar",{fecha_llegada: ll? ll+":00":null, autorizacion_jefe:$("jefe").checked},"RESERVACIONES")); if(!r) return;
+  aviso(Number(r.penalidad_cancelacion)>0 ? "Reservación cancelada. Se cobra una noche de penalidad: "+mxn(r.penalidad_cancelacion)+"." : "Reservación cancelada sin costo.","bien");
+  atender(id); cargarLista();
+}
+async function formCheckIn(r){
+  const habs = await intentar(()=>api("GET","/habitaciones",null,"RECEPCION")) || [];
+  const cats = r.lineas.map(l=>l.categoria_id);
+  const libres = habs.filter(h=>h.estado==="DISPONIBLE" && cats.includes(h.categoria_id)).slice(0,40);
+  return `<label for="hab">Habitación que se le asigna</label>
+    <select id="hab">${libres.map(h=>`<option value="${h.id}">Habitación ${h.numero} (${categoriaNombre(h.categoria_id)})</option>`).join("")||'<option value="">No hay habitaciones libres de este tipo</option>'}</select>
+    <label class="check"><input id="idv" type="checkbox"> Ya revisé la identificación del huésped</label>
+    <label for="gref">Garantía (tarjeta o depósito)</label><input id="gref" value="TARJETA-0001">
+    <p class="pista">Para probar un rechazo en la demostración, escribe una referencia que termine en -RECHAZADA.</p>
+    <button class="grande" onclick="checkIn('${r.id}')">Hacer check-in</button>`;
+}
+async function checkIn(id){
+  const r = await intentar(()=>api("POST","/reservaciones/"+id+"/check-in",{habitacion_id:$("hab").value,identidad_verificada:$("idv").checked,garantia:{tipo:"TARJETA",referencia:$("gref").value}},"RECEPCION"));
+  if(r){ aviso("Check-in listo. Se abrió la cuenta del huésped.","bien"); atender(id); }
+}
+async function formEstancia(r){
+  const c = await intentar(()=>api("GET","/reservaciones/"+r.id+"/cuenta",null,"RECEPCION"));
+  const filas = c? c.cargos.map(x=>`<tr><td>${x.concepto}</td><td>${mxn(x.monto)}</td><td>${x.empleado_id}</td></tr>`).join(""):"";
+  return `<h3>Cuenta del huésped</h3><table><tr><th>Concepto</th><th>Monto</th><th>Registró</th></tr>${filas}</table>
+    <p>Total: <b>${c?mxn(c.total):""}</b> · Pagado: <b>${c?mxn(c.pagado):""}</b> · Falta por pagar: <b>${c?mxn(c.saldo):""}</b></p>
+    <div class="paso"><b>Agregar un consumo</b><p class="pista">Límite de crédito: $3,000 en consumos (sin contar el hospedaje).</p>
+    <label for="conc">¿Qué consumió?</label><select id="conc"><option>Restaurante</option><option>Minibar</option><option>Spa</option><option>Lavandería</option><option>Otro</option></select>
+    <label for="monto">Monto en pesos</label><input id="monto" type="number" min="1" step="0.01" value="500">
+    <label for="emp">Empleado que lo registra</label><input id="emp" value="EMP-01">
+    <label class="check"><input id="adm" type="checkbox"> Administración autoriza pasar el límite</label>
+    <button class="grande" onclick="cargo('${r.id}')">Agregar consumo</button></div>
+    <div class="paso"><b>Despedir al huésped (check-out)</b>
+    <label for="pago">Cuánto pagó hoy</label><input id="pago" type="number" min="0" step="0.01" value="${c?Number(c.saldo):0}">
+    <button class="grande" onclick="checkOut('${r.id}')">Hacer check-out</button></div>`;
+}
+async function cargo(id){
+  const r = await intentar(()=>api("POST","/reservaciones/"+id+"/cargos",{concepto:$("conc").value,monto:Number($("monto").value),empleado_id:$("emp").value,autorizacion_administracion:$("adm").checked},"RECEPCION"));
+  if(r){ aviso("Consumo agregado a la cuenta.","bien"); atender(id); }
+}
+async function checkOut(id){
+  const r = await intentar(()=>api("POST","/reservaciones/"+id+"/check-out",{monto_pagado:Number($("pago").value)},"RECEPCION"));
+  if(r){ aviso("Check-out listo. La habitación pasó a limpieza.","bien"); atender(id); }
+}
+
+// ---- 4. habitaciones
+async function cargarHabs(){
+  const d = await intentar(()=>api("GET","/habitaciones",null,"LIMPIEZA")); if(!d) return;
+  const f = $("filtro").value; const lista = d.filter(h=>!f||h.estado===f).slice(0,80);
+  $("habs").innerHTML = `<div class="tarjetas">`+lista.map(h=>`<div class="tarjeta"><b>Habitación ${h.numero}</b>${categoriaNombre(h.categoria_id)}<br><span class="estado e-${h.estado}">${HAB[h.estado]}</span>
+    ${h.estado==="PENDIENTE_DE_LIMPIEZA"?`<br><button class="grande" onclick="limpiar('${h.id}')">Ya está limpia</button>`:""}</div>`).join("")+`</div>${d.length>80?'<p class="pista">Se muestran las primeras 80; usa el filtro.</p>':""}`;
+}
+$("filtro").onchange = cargarHabs;
+async function limpiar(id){ const r = await intentar(()=>api("POST","/habitaciones/"+id+"/limpieza-terminada",null,"LIMPIEZA")); if(r){ aviso("Habitación liberada: Recepción ya la ve disponible.","bien"); cargarHabs(); } }
+
+// ---- 5. resumen
+async function cargarResumen(){
+  const d = await intentar(()=>api("GET","/reportes/ocupacion",null,"ADMINISTRACION")); if(!d) return;
+  const hab = Object.entries(d.habitaciones_por_estado).map(([k,v])=>`<div class="tarjeta"><span class="estado e-${k}">${HAB[k]}</span><br><span class="precio">${v}</span></div>`).join("");
+  const res = Object.entries(d.reservaciones_por_estado).map(([k,v])=>`<div class="tarjeta"><span class="estado">${ESTADOS[k]}</span><br><span class="precio">${v}</span></div>`).join("");
+  $("resumen").innerHTML = `<p>De <b>${d.habitaciones_total}</b> habitaciones, la ocupación es del <span class="precio">${d.ocupacion_porcentaje}%</span>.</p><h3>Habitaciones</h3><div class="tarjetas">${hab}</div><h3>Reservaciones</h3><div class="tarjetas">${res}</div>`;
+}
+cargarCategorias();
+</script>
+</body>
+</html>

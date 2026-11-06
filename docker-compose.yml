@@ -1,0 +1,46 @@
+name: hotel-costa-azul
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hotel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-esta-clave}
+      POSTGRES_DB: ${POSTGRES_DB:-hotel}
+    volumes:
+      - db_datos:/var/lib/postgresql/data
+      - ./docker/crear-base-de-pruebas.sql:/docker-entrypoint-initdb.d/01-pruebas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hotel} -d ${POSTGRES_DB:-hotel}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      target: runtime
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hotel}:${POSTGRES_PASSWORD:-cambiar-esta-clave}@db:5432/${POSTGRES_DB:-hotel}
+      CARGAR_DATOS_DEMO: ${CARGAR_DATOS_DEMO:-1}
+      BENEFICIO_UMBRAL_MXN: ${BENEFICIO_UMBRAL_MXN:-1500}
+    ports:
+      - "${PUERTO_API:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  pruebas:
+    profiles: ["pruebas"]
+    build:
+      context: .
+      target: test
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hotel}:${POSTGRES_PASSWORD:-cambiar-esta-clave}@db:5432/hotel_pruebas
+    command: python -m pytest -v --cov=src --cov-report=term-missing --cov-fail-under=80
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_datos:

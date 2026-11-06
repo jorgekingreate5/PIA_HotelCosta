@@ -1,0 +1,68 @@
+name: CI/CD Hotel Costa Azul
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  calidad-y-pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check src tests scripts
+      - run: pytest -v --cov=src --cov-report=term-missing --cov-report=html --cov-fail-under=80
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-cobertura-html
+          path: htmlcov/
+
+  integracion-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: hotel
+          POSTGRES_PASSWORD: ci-solo-para-pruebas
+          POSTGRES_DB: hotel_pruebas
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U hotel" --health-interval 5s --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://hotel:ci-solo-para-pruebas@localhost:5432/hotel_pruebas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -v tests/integration/test_repositorios_sql.py
+
+  imagen-docker:
+    needs: [calidad-y-pruebas, integracion-postgres]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target runtime -t hotel-costa-azul-api:ci .
+
+  despliegue:
+    needs: imagen-docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+    steps:
+      - name: Disparar despliegue en Render
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        run: curl --fail -X POST "$RENDER_DEPLOY_HOOK_URL"
+      - name: Aviso si no hay secreto configurado
+        if: env.RENDER_DEPLOY_HOOK_URL == ''
+        run: echo "Sin RENDER_DEPLOY_HOOK_URL: se omite el despliegue automático."

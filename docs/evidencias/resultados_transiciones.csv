@@ -1,0 +1,21 @@
+﻿caso_id,operacion_id,accion,estado_inicial,estado_final,resultado,detalle
+HOT-S001,HOT-O001,completar,SOLICITADA,CHECK_OUT,OK,
+HOT-S002,HOT-O002,cancelar,SOLICITADA,CANCELADA,OK,
+HOT-S003,HOT-O003,repetir_aprobacion,SOLICITADA,CONFIRMADA,RECHAZADA,TransicionInvalidaError: No se puede 'confirmar' desde el estado CONFIRMADA
+HOT-S004,HOT-O004,saltar_estado,SOLICITADA,SOLICITADA,RECHAZADA,TransicionInvalidaError: No se puede 'check_in' desde el estado SOLICITADA
+HOT-S005,HOT-O005,aprobar,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: hay categorías no habilitadas
+HOT-S006,HOT-O006,completar,SOLICITADA,CHECK_OUT,OK,
+HOT-S007,HOT-O007,cancelar,SOLICITADA,CANCELADA,OK,
+HOT-S008,HOT-O008,repetir_aprobacion,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: la reservación no está autorizada
+HOT-S009,HOT-O009,saltar_estado,SOLICITADA,SOLICITADA,RECHAZADA,TransicionInvalidaError: No se puede 'check_in' desde el estado SOLICITADA
+HOT-S010,HOT-O010,aprobar,SOLICITADA,CONFIRMADA,OK,
+HOT-S011,HOT-O011,completar,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: el huésped no está activo
+HOT-S012,HOT-O012,cancelar,SOLICITADA,CANCELADA,OK,
+HOT-S013,HOT-O013,repetir_aprobacion,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: el huésped no está activo; la reservación no tiene detalle
+HOT-S014,HOT-O014,saltar_estado,SOLICITADA,SOLICITADA,RECHAZADA,TransicionInvalidaError: No se puede 'check_in' desde el estado SOLICITADA
+HOT-S015,HOT-O015,aprobar,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: el huésped no está activo; hay categorías no habilitadas
+HOT-S016,HOT-O016,completar,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: la reservación no está autorizada
+HOT-S017,HOT-O017,cancelar,SOLICITADA,CANCELADA,OK,
+HOT-S018,HOT-O018,repetir_aprobacion,SOLICITADA,CONFIRMADA,RECHAZADA,TransicionInvalidaError: No se puede 'confirmar' desde el estado CONFIRMADA
+HOT-S019,HOT-O019,saltar_estado,SOLICITADA,SOLICITADA,RECHAZADA,TransicionInvalidaError: No se puede 'check_in' desde el estado SOLICITADA
+HOT-S020,HOT-O020,aprobar,SOLICITADA,SOLICITADA,RECHAZADA,PrecondicionNoCumplidaError: No cumple las condiciones para confirmarse: hay categorías no habilitadas

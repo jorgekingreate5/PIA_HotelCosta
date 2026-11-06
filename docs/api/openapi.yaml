@@ -1,0 +1,683 @@
+openapi: 3.0.3
+info:
+  title: Hotel Costa Azul – API de Reservaciones
+  version: 1.0.0
+  description: >-
+    Contrato de diseño. La API en ejecución publica el contrato real en /openapi.json y /docs.
+    Toda operación (salvo /health) lee el rol del encabezado X-Rol.
+paths:
+  "/health":
+    get:
+      tags: [Sistema]
+      summary: "Estado del servicio"
+      responses:
+        "200":
+          description: Operación realizada
+  "/categorias":
+    get:
+      tags: [Consultas]
+      summary: "Listar categorías con tarifa y cupo"
+      description: "Roles permitidos: Todos"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol no reconocido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones":
+    post:
+      tags: [Reservaciones]
+      summary: "Solicitar una reservación"
+      description: "Roles permitidos: RESERVACIONES"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SolicitudReservacion"}
+      responses:
+        "201":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "Huésped o categoría inexistente"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: "Cuerpo inválido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+    get:
+      tags: [Reservaciones]
+      summary: "Listar reservaciones (filtro opcional por estado)"
+      description: "Roles permitidos: Todos"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: estado
+          in: query
+          required: false
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol no reconocido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: "Estado inválido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}":
+    get:
+      tags: [Reservaciones]
+      summary: "Consultar una reservación"
+      description: "Roles permitidos: Todos"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol no reconocido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/autorizar":
+    post:
+      tags: [Reservaciones]
+      summary: "Autorizar una reservación solicitada"
+      description: "Roles permitidos: RESERVACIONES"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "No está solicitada"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/confirmar":
+    post:
+      tags: [Reservaciones]
+      summary: "Confirmar una reservación y descontar cupo"
+      description: "Roles permitidos: RESERVACIONES"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Transición inválida o sin cupo"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: "No cumple las condiciones"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/cancelar":
+    post:
+      tags: [Reservaciones]
+      summary: "Cancelar una reservación"
+      description: "Roles permitidos: RESERVACIONES. [CAMBIO] Cuerpo opcional: política de 48 h; la respuesta incluye penalidad_cancelacion."
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Cancelacion"}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Transición inválida"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/no-show":
+    post:
+      tags: [Reservaciones]
+      summary: "Registrar un no-show"
+      description: "Roles permitidos: RESERVACIONES, RECEPCION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Transición inválida"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/check-in":
+    post:
+      tags: [Estancia]
+      summary: "Hacer el check-in"
+      description: "Roles permitidos: RECEPCION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CheckIn"}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Transición inválida o habitación no disponible"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: "Falta identidad o garantía, o fue rechazada"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "503":
+          description: "La pasarela de garantías no respondió"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/cargos":
+    post:
+      tags: [Estancia]
+      summary: "Registrar un cargo en la cuenta"
+      description: "Roles permitidos: RECEPCION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Cargo"}
+      responses:
+        "201":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "Sin cuenta"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Cuenta cerrada o CreditoExcedidoError (tope de $3,000 MXN)"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: "Monto inválido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/cuenta":
+    get:
+      tags: [Estancia]
+      summary: "Consultar la cuenta de la estancia"
+      description: "Roles permitidos: RECEPCION, ADMINISTRACION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "Sin cuenta"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/cambio-habitacion":
+    post:
+      tags: [Estancia]
+      summary: "Cambiar de habitación"
+      description: "Roles permitidos: RECEPCION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CambioHabitacion"}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Habitación no disponible o transición inválida"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/historial-cambios":
+    get:
+      tags: [Estancia]
+      summary: "Historial de cambios de habitación"
+      description: "Roles permitidos: Todos"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol no reconocido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reservaciones/{reservacion_id}/check-out":
+    post:
+      tags: [Estancia]
+      summary: "Hacer el check-out"
+      description: "Roles permitidos: RECEPCION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: reservacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CheckOut"}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Saldo pendiente o transición inválida"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/habitaciones":
+    get:
+      tags: [Habitaciones]
+      summary: "Estatus de las habitaciones"
+      description: "Roles permitidos: Todos"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol no reconocido"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/habitaciones/{habitacion_id}/limpieza-terminada":
+    post:
+      tags: [Habitaciones]
+      summary: "Marcar habitación disponible"
+      description: "Roles permitidos: LIMPIEZA"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: habitacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "No estaba pendiente de limpieza"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/habitaciones/{habitacion_id}/fuera-de-servicio":
+    post:
+      tags: [Habitaciones]
+      summary: "Sacar una habitación de servicio"
+      description: "Roles permitidos: ADMINISTRACION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: habitacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "Habitación ocupada"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/habitaciones/{habitacion_id}/reactivar":
+    post:
+      tags: [Habitaciones]
+      summary: "Reactivar una habitación"
+      description: "Roles permitidos: ADMINISTRACION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+        - name: habitacion_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "404":
+          description: "No existe"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "409":
+          description: "No estaba fuera de servicio"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/reportes/ocupacion":
+    get:
+      tags: [Reportes]
+      summary: "Reporte de ocupación"
+      description: "Roles permitidos: ADMINISTRACION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  "/eventos":
+    get:
+      tags: [Reportes]
+      summary: "Últimos eventos de dominio"
+      description: "Roles permitidos: ADMINISTRACION"
+      parameters:
+        - name: X-Rol
+          in: header
+          required: true
+          schema: {type: string, enum: [RESERVACIONES, RECEPCION, LIMPIEZA, ADMINISTRACION]}
+      responses:
+        "200":
+          description: Operación realizada
+        "403":
+          description: "Rol sin permiso"
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: {type: string}
+        detalle: {type: string}
+    SolicitudReservacion:
+      type: object
+      required: [huesped_id, lineas]
+      properties:
+        huesped_id: {type: string}
+        reservacion_id: {type: string}
+        referencia: {type: string}
+        promocion_activa: {type: boolean}
+        lineas:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [categoria_id, cantidad]
+            properties:
+              categoria_id: {type: string}
+              cantidad: {type: integer, minimum: 1}
+    CheckIn:
+      type: object
+      required: [habitacion_id, identidad_verificada]
+      properties:
+        habitacion_id: {type: string}
+        identidad_verificada: {type: boolean}
+        garantia:
+          type: object
+          properties:
+            tipo: {type: string}
+            referencia: {type: string}
+    Cancelacion:
+      type: object
+      properties:
+        fecha_llegada: {type: string, format: date-time, nullable: true}
+        autorizacion_jefe: {type: boolean, default: false}
+    Cargo:
+      type: object
+      required: [concepto, monto, empleado_id]
+      properties:
+        concepto: {type: string}
+        monto: {type: number, exclusiveMinimum: 0}
+        empleado_id: {type: string}
+        autorizacion_administracion: {type: boolean, default: false}  # [CAMBIO] excede el tope de $3,000
+    CambioHabitacion:
+      type: object
+      required: [nueva_habitacion_id, motivo, responsable]
+      properties:
+        nueva_habitacion_id: {type: string}
+        motivo: {type: string}
+        responsable: {type: string}
+    CheckOut:
+      type: object
+      properties:
+        monto_pagado: {type: number, minimum: 0}
