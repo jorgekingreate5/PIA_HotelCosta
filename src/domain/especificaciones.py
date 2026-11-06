@@ -35,7 +35,7 @@ class Y(Especificacion):
                 and self.derecha.es_satisfecha_por(contexto))
 
 
-class O(Especificacion):
+class O(Especificacion)#:
     def __init__(self, izquierda, derecha):
         self.izquierda, self.derecha = izquierda, derecha
 
