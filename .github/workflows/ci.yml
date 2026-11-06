@@ -65,4 +65,4 @@ jobs:
         run: curl --fail -X POST "$RENDER_DEPLOY_HOOK_URL"
       - name: Aviso si no hay secreto configurado
         if: env.RENDER_DEPLOY_HOOK_URL == ''
-        run: echo "Sin RENDER_DEPLOY_HOOK_URL: se omite el despliegue automático."
+        run: echo "Sin secreto de Render - se omite el despliegue automatico"
