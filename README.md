@@ -74,3 +74,13 @@ Ver `docs/CAMBIOS_RESPECTO_A_ENTREGA_ANTERIOR.md` (todo lo nuevo está marcado c
 
 ## Limitaciones
 La autenticación es un encabezado de rol, los eventos viven en memoria, no hay migraciones, la pasarela de garantías es simulada y la penalidad de cancelación no se guarda en la base. Siguen sin implementarse la expiración de la pre-reserva a 24 h, el no-show con cargo, la salida anticipada, la extensión y la llegada anticipada (ver BRD, sección 12).
+
+## Conclusiones
+
+**Jonathan Alexander Reyes García:** Si algo me llevo de estos documentos es que el análisis de negocio consiste en modelar decisiones y reglas, no en llenar formatos. Al principio creía que se trataba de producir entregables correctos por separado; con el caso del Hotel Costa Azul entendí que el problema real era la ruptura de información entre Limpieza, Recepción y Reservaciones, y que los documentos solo valían si eran coherentes entre sí.
+
+La entrevista me enseñó a preguntar por reglas, responsables y excepciones, no solo por definiciones; de ahí surgieron la garantía en 24 horas, la cancelación sin cargo a 48 horas, el tope de $3,000 MXN y la limpieza de 30 a 45 minutos. El glosario me hizo ver que un término ambiguo se convierte en una regla ambigua. El BRD me obligó a separar el problema de la solución y a delimitar el alcance.
+
+Las user stories con Gherkin me enseñaron a escribir requisitos comprobables, incluyendo caminos alternos. El BPMN me hizo ver que el ciclo no termina en el check-out, sino cuando Limpieza marca la habitación como disponible. La matriz de trazabilidad me mostró vacíos y me demostró que trazar es una revisión de calidad, no un trámite.
+
+Mi aprendizaje principal fue dejar de revisar documentos aislados y empezar a leerlos como un solo sistema de decisiones. La calidad del conjunto está en su consistencia, no en cada documento por separado.
